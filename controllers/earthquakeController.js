@@ -3,7 +3,7 @@ const Earthquake = require("../models/earthquakeModel");
 
 exports.getEarthquakeRiskByLatLng = async (req, res, next) => {
   try {
-    const { latitude, longitude, includeEarthquakes } = req.query;
+    const { latitude, longitude, includeEarthquakess } = req.query;
     const radius = req.query.radius || 50; // Default radius of 50 units if not provided in the query
 
     // Convert latitude and longitude to radians
@@ -68,7 +68,7 @@ exports.getEarthquakeRiskByLatLng = async (req, res, next) => {
       }
     });
 
-    if (includeEarthquakes) {
+    if (includeEarthquakess) {
       res.json({
         count: nearbyEarthquakes.length,
         dangerScore,
@@ -84,66 +84,30 @@ exports.getEarthquakeRiskByLatLng = async (req, res, next) => {
     next(error);
   }
 };
-
 exports.getEarthquakePolygon = async (req, res, next) => {
-  const { radius, minLength } = req.query;
+  const { radius, minLength, includeEarthquakes } = req.query;
 
   try {
-    // Fetch on cluster label 15
+    // Fetch earthquakes with cluster label 15
     const earthquakes = await Earthquake.find({
       cluster_label: 15,
     }).select("latitude longitude magnitude");
 
-    // Initialize an array to store clusters
-    const clusters = [];
+    // Cluster earthquakes
+    const clusters = clusterEarthquakes(earthquakes, radius);
 
-    let defaultRadius = 300000;
-    // check if radius is exist, if yes replace the default radius
-    if (radius) {
-      defaultRadius = parseInt(radius);
+    // Add total earthquakes count to each cluster
+    addTotalEarthquakes(clusters);
+
+    // Remove earthquake data if includeEarthquakes is false
+    if (!includeEarthquakes) {
+      removeEarthquakeData(clusters);
     }
 
-    // Iterate over earthquakes
-    earthquakes.forEach((earthquake) => {
-      // Flag to indicate if the earthquake is assigned to any existing cluster
-      let assigned = false;
+    // Filter out clusters with less than minLength earthquakes
+    const filteredClusters = filterClusters(clusters, minLength);
 
-      // Iterate over existing clusters to check if the earthquake can be assigned to any
-      clusters.forEach((cluster) => {
-        // Calculate distance between the earthquake and the centroid of the cluster
-        const distance = geolib.getDistance(
-          { latitude: earthquake.latitude, longitude: earthquake.longitude },
-          {
-            latitude: cluster.centroid.latitude,
-            longitude: cluster.centroid.longitude,
-          }
-        );
-
-        // If the distance is within the threshold, assign the earthquake to the cluster
-        if (distance <= defaultRadius) {
-          // 300km converted to meters
-          cluster.earthquakes.push(earthquake);
-          assigned = true;
-        }
-      });
-
-      // If the earthquake is not assigned to any existing cluster, create a new cluster
-      if (!assigned) {
-        clusters.push({
-          centroid: {
-            latitude: earthquake.latitude,
-            longitude: earthquake.longitude,
-          },
-          earthquakes: [earthquake],
-        });
-      }
-    });
-    // Filter out clusters containing less than 3 earthquakes or defined length
-    const earthquakeMinLength = minLength ? parseInt(minLength) : 3;
-    const filteredClusters = clusters.filter(
-      (cluster) => cluster.earthquakes.length >= earthquakeMinLength
-    );
-
+    // Send response
     res.send({
       message: "Earthquakes clustered successfully",
       clusters: filteredClusters,
@@ -152,3 +116,90 @@ exports.getEarthquakePolygon = async (req, res, next) => {
     next(error);
   }
 };
+
+// Function to create a new cluster
+function createCluster(earthquake) {
+  return {
+    centroid: {
+      latitude: earthquake.latitude,
+      longitude: earthquake.longitude,
+    },
+    earthquakes: [earthquake],
+  };
+}
+// Function to update an existing cluster with a new earthquake
+function updateCluster(cluster, earthquake) {
+  const totalLatitude =
+    cluster.earthquakes.reduce((sum, eq) => sum + eq.latitude, 0) +
+    earthquake.latitude;
+  const totalLongitude =
+    cluster.earthquakes.reduce((sum, eq) => sum + eq.longitude, 0) +
+    earthquake.longitude;
+  cluster.centroid.latitude = totalLatitude / (cluster.earthquakes.length + 1);
+  cluster.centroid.longitude =
+    totalLongitude / (cluster.earthquakes.length + 1);
+  cluster.earthquakes.push(earthquake);
+}
+// Function to add total earthquakes count to each cluster
+function addTotalEarthquakes(clusters) {
+  clusters.forEach((cluster) => {
+    cluster.totalEarthquakes = cluster.earthquakes.length;
+  });
+}
+// Function to remove earthquake data from clusters if includeEarthquakes is false
+function removeEarthquakeData(clusters) {
+  clusters.forEach((cluster) => {
+    delete cluster.earthquakes;
+  });
+}
+// Function to filter clusters based on minimum length
+function filterClusters(clusters, minLength) {
+  const earthquakeMinLength = minLength ? parseInt(minLength) : 4;
+  return clusters.filter(
+    (cluster) =>
+      cluster.earthquakes && cluster.earthquakes.length >= earthquakeMinLength
+  );
+}
+// Function to cluster earthquakes
+function clusterEarthquakes(earthquakes, radius) {
+  const clusters = [];
+  let defaultRadius = 300000;
+
+  // Set default radius if provided
+  if (radius) {
+    defaultRadius = parseInt(radius);
+  }
+
+  // Iterate over earthquakes to cluster them
+  earthquakes.forEach((earthquake) => {
+    let assigned = false;
+
+    // If no clusters exist, create a new cluster with the current earthquake
+    if (clusters.length === 0) {
+      clusters.push(createCluster(earthquake));
+      return;
+    }
+
+    // Iterate over existing clusters to assign the earthquake to a cluster
+    for (const cluster of clusters) {
+      const distance = geolib.getDistance(
+        { latitude: earthquake.latitude, longitude: earthquake.longitude },
+        cluster.centroid
+      );
+
+      // If the earthquake is within the threshold distance, assign it to the cluster
+      if (distance <= defaultRadius) {
+        updateCluster(cluster, earthquake);
+        assigned = true;
+        break;
+      }
+    }
+
+    // If the earthquake is not assigned to any existing cluster, create a new cluster
+    if (!assigned) {
+      clusters.push(createCluster(earthquake));
+    }
+  });
+
+  return clusters;
+}
