@@ -67,7 +67,14 @@ async function getEarthquakeSummary() {
   );
 
   const totalMilliseconds = largestEpoch.datetime - smallestEpoch.datetime;
-  const totalYears = totalMilliseconds / (1000 * 60 * 60 * 24 * 365);
+  const totalYears = Math.round(
+    totalMilliseconds / (1000 * 60 * 60 * 24 * 365)
+  );
+
+  const formatDate = (epoch) => {
+    const date = new Date(epoch);
+    return date.toLocaleString();
+  };
 
   const largestMagnitudeEarthquake = await Earthquake.findOne(
     {},
@@ -83,12 +90,17 @@ async function getEarthquakeSummary() {
   return {
     totalEarthquakes,
     largestCluster: largestClusterLabel,
-    totalYears,
+    totalYears: {
+      years: totalYears,
+      firstData: formatDate(smallestEpoch.datetime),
+      lastData: formatDate(largestEpoch.datetime),
+    },
     largestEarthquake: {
       magnitude: largestMagnitudeEarthquake.magnitude,
       latitude: largestMagnitudeEarthquake.latitude,
       longitude: largestMagnitudeEarthquake.longitude,
       location,
+      datetime: formatDate(largestMagnitudeEarthquake.datetime),
     },
   };
 }
