@@ -47,6 +47,10 @@ const getGeneralStatistic = async (req, res, next) => {
   }
 };
 
+const trimMultipleDecimals = (number) => {
+  return parseFloat(number.toFixed(2));
+};
+
 async function getEarthquakeSummary() {
   const totalEarthquakes = await Earthquake.countDocuments();
 
@@ -71,9 +75,35 @@ async function getEarthquakeSummary() {
     totalMilliseconds / (1000 * 60 * 60 * 24 * 365)
   );
 
-  const formatDate = (epoch) => {
+  const formatDate = (epoch, withTime) => {
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
     const date = new Date(epoch);
-    return date.toLocaleString();
+    const month = months[date.getMonth()];
+    const day = date.getDate();
+    const year = date.getFullYear();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const seconds = date.getSeconds();
+
+    if (withTime) {
+      return `${month} ${day}, ${year}, ${hours}:${minutes}:${seconds}`;
+    } else {
+      return `${month} ${day}, ${year}`;
+    }
   };
 
   const largestMagnitudeEarthquake = await Earthquake.findOne(
@@ -96,11 +126,11 @@ async function getEarthquakeSummary() {
       lastData: formatDate(largestEpoch.datetime),
     },
     largestEarthquake: {
-      magnitude: largestMagnitudeEarthquake.magnitude,
+      magnitude: trimMultipleDecimals(largestMagnitudeEarthquake.magnitude),
       latitude: largestMagnitudeEarthquake.latitude,
       longitude: largestMagnitudeEarthquake.longitude,
       location,
-      datetime: formatDate(largestMagnitudeEarthquake.datetime),
+      datetime: formatDate(largestMagnitudeEarthquake.datetime, true),
     },
   };
 }
