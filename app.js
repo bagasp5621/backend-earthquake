@@ -39,7 +39,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 app.use(
   cors({
-    origin: "http://localhost:5173", // Replace with your actual frontend origin
+    origin: "http://localhost:3000", // Replace with your actual frontend origin
     credentials: true,
   })
 );

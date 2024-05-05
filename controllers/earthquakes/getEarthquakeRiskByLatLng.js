@@ -44,25 +44,25 @@ const getEarthquakeRiskByLatLng = async (req, res, next) => {
       return distance <= radius;
     });
 
-    let dangerScore = { kecil: 0, sedang: 0, tinggi: 0, berbahaya: 0 };
+    let dangerScore = { small: 0, medium: 0, high: 0, danger: 0 };
 
     nearbyEarthquakes.map((earthquake) => {
       switch (earthquake.cluster_label) {
         case 15:
-          dangerScore.berbahaya++;
+          dangerScore.danger++;
           break;
         case 14:
         case 13:
-          dangerScore.tinggi++;
+          dangerScore.high++;
           break;
         case 12:
         case 11:
         case 10:
         case 9:
-          dangerScore.sedang++;
+          dangerScore.medium++;
           break;
         default:
-          dangerScore.kecil++;
+          dangerScore.small++;
           break;
       }
     });
