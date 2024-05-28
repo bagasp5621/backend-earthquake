@@ -1,5 +1,13 @@
 const Earthquake = require("../../models/earthquakeModel");
 
+const calculateRiskLevel = (riskCounts) => {
+  if (riskCounts.danger >= 3) return "Danger";
+  else if (riskCounts.high >= 5) return "High";
+  else if (riskCounts.medium >= 24) return "Medium";
+  else if (riskCounts.small >= 48) return "Small";
+  else return "Safe";
+};
+
 const getEarthquakeRiskByLatLng = async (req, res, next) => {
   try {
     const { latitude, longitude, includeEarthquakess } = req.query;
@@ -67,8 +75,11 @@ const getEarthquakeRiskByLatLng = async (req, res, next) => {
       }
     });
 
+    const risk = calculateRiskLevel(dangerScore);
+
     if (includeEarthquakess) {
       res.json({
+        risk,
         count: nearbyEarthquakes.length,
         dangerScore,
         earthquakes: nearbyEarthquakes,
@@ -76,6 +87,7 @@ const getEarthquakeRiskByLatLng = async (req, res, next) => {
     }
 
     res.json({
+      risk,
       count: nearbyEarthquakes.length,
       dangerScore,
     });
