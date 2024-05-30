@@ -1,8 +1,8 @@
 const Earthquake = require("../../models/earthquakeModel");
 
 const calculateRiskLevel = (riskCounts) => {
-  if (riskCounts.danger >= 3) return "Danger";
-  else if (riskCounts.high >= 5) return "High";
+  if (riskCounts.danger >= 6) return "Very High";
+  else if (riskCounts.high >= 12) return "High";
   else if (riskCounts.medium >= 24) return "Medium";
   else if (riskCounts.small >= 48) return "Small";
   else return "Safe";
@@ -11,7 +11,7 @@ const calculateRiskLevel = (riskCounts) => {
 const getEarthquakeRiskByLatLng = async (req, res, next) => {
   try {
     const { latitude, longitude, includeEarthquakess } = req.query;
-    const radius = req.query.radius || 50; // Default radius of 50 units if not provided in the query
+    const radius = req.query.radius || 100; // Default radius of 50 units if not provided in the query
 
     // Convert latitude and longitude to radians
     const userLatRad = parseFloat(latitude) * (Math.PI / 180);
