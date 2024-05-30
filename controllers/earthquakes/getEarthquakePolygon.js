@@ -8,20 +8,20 @@ const getEarthquakePolygon = async (req, res, next) => {
     // Fetch earthquakes with cluster label 15
     const earthquakes = await Earthquake.find({
       cluster_label: { $in: [15] },
-    }).select("latitude longitude magnitude");
+    }).select("latitude longitude magnitude depth datetime");
 
     // Cluster earthquakes
     const clusters = clusterEarthquakes(earthquakes, radius);
 
-    // Add total earthquakes count to each cluster
-    addTotalEarthquakes(clusters);
-
     // Filter out clusters with less than minLength earthquakes
     const filteredClusters = filterClusters(clusters, minLength);
 
+    // Add total earthquakes count to each cluster
+    addTotalEarthquakes(filteredClusters);
+
     // Remove earthquake data if includeEarthquakes is false
     if (!includeEarthquakes) {
-      removeEarthquakeData(clusters);
+      removeEarthquakeData(filteredClusters);
     }
 
     // Send response
@@ -59,8 +59,18 @@ function updateCluster(cluster, earthquake) {
 }
 // Function to add total earthquakes count to each cluster
 function addTotalEarthquakes(clusters) {
+  let avgMag = 0;
+  let avgDepth = 0;
   clusters.forEach((cluster) => {
+    cluster.totalEarthquakes = cluster.earthquakes.forEach((eq) => {
+      avgMag += eq.magnitude;
+      avgDepth += eq.depth;
+    });
     cluster.totalEarthquakes = cluster.earthquakes.length;
+    cluster.avgMag = avgMag / cluster.totalEarthquakes;
+    cluster.avgDepth = avgDepth / cluster.totalEarthquakes;
+    avgMag = 0;
+    avgDepth = 0;
   });
 }
 // Function to remove earthquake data from clusters if includeEarthquakes is false
