@@ -8,14 +8,16 @@ const indonesiaProvinceGeoJSON = JSON.parse(
   fs.readFileSync(path.join(__dirname, "../../public/indonesiaProvince.json"))
 );
 
+let earthquakeData;
+
 const getProvinceStatistic = async (req, res, next) => {
   try {
     // Check if recalculate parameter is provided and true
     const recalculate = req.query.recalculate === "true";
 
-    let provinceEarthquakeCounts;
-
     if (recalculate) {
+      let provinceEarthquakeCounts;
+
       // Fetch earthquakes from the database
       const earthquakes = await Earthquake.find({});
 
@@ -42,15 +44,17 @@ const getProvinceStatistic = async (req, res, next) => {
 
       // Save or update the province earthquake counts in the database
       await saveOrUpdateProvinceStatistics(provinceEarthquakeCounts);
-    } else {
-      // Fetch province earthquake counts from the database
-      provinceEarthquakeCounts = await getProvinceStatistics();
     }
+
+    // get data for endpoint
+    earthquakeData = await ProvinceStatistic.find({}).select(
+      "province earthquakeCount"
+    );
 
     // Send response with earthquake counts by province
     res.status(200).json({
       message: "Earthquake Statistic by Province",
-      data: provinceEarthquakeCounts,
+      data: earthquakeData,
     });
   } catch (error) {
     next(error);
@@ -112,17 +116,17 @@ async function saveOrUpdateProvinceStatistics(provinceEarthquakeCounts) {
   }
 }
 
-async function getProvinceStatistics() {
-  // Fetch province earthquake counts from the database
-  const provinceStatistics = await ProvinceStatistic.find({});
+// async function getProvinceStatistics() {
+//   // Fetch province earthquake counts from the database
+//   const provinceStatistics = await ProvinceStatistic.find({});
 
-  // Convert province statistics to an object with province names as keys
-  const provinceEarthquakeCounts = {};
-  provinceStatistics.forEach((statistic) => {
-    provinceEarthquakeCounts[statistic.province] = statistic.earthquakeCount;
-  });
+//   // Convert province statistics to an object with province names as keys
+//   const provinceEarthquakeCounts = {};
+//   provinceStatistics.forEach((statistic) => {
+//     provinceEarthquakeCounts[statistic.province] = statistic.earthquakeCount;
+//   });
 
-  return provinceEarthquakeCounts;
-}
+//   return provinceEarthquakeCounts;
+// }
 
 module.exports = getProvinceStatistic;
