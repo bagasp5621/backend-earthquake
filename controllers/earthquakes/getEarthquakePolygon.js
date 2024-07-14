@@ -8,7 +8,7 @@ const getEarthquakePolygon = async (req, res, next) => {
     // Fetch earthquakes with cluster label 15
     const earthquakes = await Earthquake.find({
       cluster_label: { $in: [15] },
-    }).select("latitude longitude magnitude depth datetime");
+    }).select("latitude longitude magnitude depth datetime phasecount");
 
     // Cluster earthquakes
     const clusters = clusterEarthquakes(earthquakes, radius);

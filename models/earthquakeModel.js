@@ -21,6 +21,10 @@ const earthquakeSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  phasecount: {
+    type: Number,
+    required: true,
+  },
   cluster_label: {
     type: Number,
     required: true,
