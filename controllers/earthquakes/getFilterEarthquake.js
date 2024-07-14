@@ -1,29 +1,27 @@
 const Earthquake = require("../../models/earthquakeModel");
 
 const filterEarthquake = async (req, res, next) => {
-  let {
-    north,
-    south,
-    east,
-    west,
-    startDate,
-    endDate,
-    minMag,
-    maxMag,
-    minDepth,
-    maxDepth,
-  } = req.query;
-
   try {
+    let {
+      north,
+      south,
+      east,
+      west,
+      startDate,
+      endDate,
+      minMag,
+      maxMag,
+      minDepth,
+      maxDepth,
+    } = req.query;
+
     // Constructing the filter object
     const filter = {};
-
     // Latitude and Longitude bounds
     if (north && south && east && west) {
       filter.latitude = { $gte: parseFloat(south), $lte: parseFloat(north) };
       filter.longitude = { $gte: parseFloat(west), $lte: parseFloat(east) };
     }
-
     // Date range (if startDate and endDate provided)
     if (startDate && endDate) {
       const startTimestamp = parseInt(startDate);
@@ -39,22 +37,21 @@ const filterEarthquake = async (req, res, next) => {
         $lte: endTimestamp,
       };
     }
-
     // Magnitude range
     if (minMag && maxMag) {
       filter.magnitude = { $gte: parseFloat(minMag), $lte: parseFloat(maxMag) };
     }
-
     // Depth range
     if (minDepth && maxDepth) {
       filter.depth = { $gte: parseFloat(minDepth), $lte: parseFloat(maxDepth) };
     }
-
     if (Object.keys(filter).length === 0) {
       res.status(400).send({
         message: "Missing query parameter",
       });
     }
+
+    console.log(filter);
 
     const earthquakes = await Earthquake.find(filter);
 

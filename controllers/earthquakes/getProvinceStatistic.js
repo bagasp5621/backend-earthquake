@@ -17,13 +17,10 @@ const getProvinceStatistic = async (req, res, next) => {
 
     if (recalculate) {
       let provinceEarthquakeCounts;
-
       // Fetch earthquakes from the database
       const earthquakes = await Earthquake.find({});
-
       // Initialize an object to store earthquake counts by province
       provinceEarthquakeCounts = {};
-
       // Iterate over each feature in indonesiaProvinceGeoJSON and pre-process the polygons
       const preProcessedProvinces = indonesiaProvinceGeoJSON.features.map(
         (feature) => ({
@@ -31,7 +28,6 @@ const getProvinceStatistic = async (req, res, next) => {
           polygons: flattenCoordinates(feature.geometry.coordinates),
         })
       );
-
       // Loop through each earthquake
       earthquakes.forEach((earthquake) => {
         // Determine the province for the earthquake

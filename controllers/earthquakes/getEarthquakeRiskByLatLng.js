@@ -10,28 +10,25 @@ const calculateRiskLevel = (riskCounts) => {
 
 const getEarthquakeRiskByLatLng = async (req, res, next) => {
   try {
-    const { latitude, longitude, includeEarthquakess } = req.query;
-    const radius = req.query.radius || 100; // Default radius of 50 units if not provided in the query
-
+    const { latitude, longitude, includeEarthquakes, radius = 100 } = req.query;
     // Convert latitude and longitude to radians
     const userLatRad = parseFloat(latitude) * (Math.PI / 180);
     const userLngRad = parseFloat(longitude) * (Math.PI / 180);
-
     // Earth radius in kilometers
     const earthRadius = 6371;
-
     // Calculate the distance in radians for the given radius
     const distanceRadius = radius / earthRadius;
-
-    // Find earthquakes within the distance radius
+    // Convert distance radius from radians to degrees for bounding box
+    const distanceRadiusDegrees = distanceRadius * (180 / Math.PI);
+    // Find earthquakes within the bounding box
     const earthquakes = await Earthquake.find({
       latitude: {
-        $gte: parseFloat(latitude) - (180 / Math.PI) * distanceRadius,
-        $lte: parseFloat(latitude) + (180 / Math.PI) * distanceRadius,
+        $gte: parseFloat(latitude) - distanceRadiusDegrees,
+        $lte: parseFloat(latitude) + distanceRadiusDegrees,
       },
       longitude: {
-        $gte: parseFloat(longitude) - (180 / Math.PI) * distanceRadius,
-        $lte: parseFloat(longitude) + (180 / Math.PI) * distanceRadius,
+        $gte: parseFloat(longitude) - distanceRadiusDegrees,
+        $lte: parseFloat(longitude) + distanceRadiusDegrees,
       },
     });
 
@@ -42,11 +39,8 @@ const getEarthquakeRiskByLatLng = async (req, res, next) => {
       const dLat = eqLatRad - userLatRad;
       const dLng = eqLngRad - userLngRad;
       const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(userLatRad) *
-          Math.cos(eqLatRad) *
-          Math.sin(dLng / 2) *
-          Math.sin(dLng / 2);
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(userLatRad) * Math.cos(eqLatRad) * Math.sin(dLng / 2) ** 2;
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       const distance = earthRadius * c;
       return distance <= radius;
@@ -77,7 +71,7 @@ const getEarthquakeRiskByLatLng = async (req, res, next) => {
 
     const risk = calculateRiskLevel(dangerScore);
 
-    if (includeEarthquakess) {
+    if (includeEarthquakes) {
       res.json({
         risk,
         count: nearbyEarthquakes.length,

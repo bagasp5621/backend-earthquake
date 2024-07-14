@@ -87,35 +87,27 @@ function filterClusters(clusters, minLength) {
       cluster.earthquakes && cluster.earthquakes.length >= earthquakeMinLength
   );
 }
-// Function to cluster earthquakes
-function clusterEarthquakes(earthquakes, radius) {
-  const clusters = [];
-  let defaultRadius = 300000;
 
-  // Set default radius if provided
-  if (radius) {
-    defaultRadius = parseInt(radius);
-  }
+// Function to cluster earthquakes
+function clusterEarthquakes(earthquakes, radius = 300000) {
+  const clusters = [];
 
   // Iterate over earthquakes to cluster them
   earthquakes.forEach((earthquake) => {
     let assigned = false;
-
     // If no clusters exist, create a new cluster with the current earthquake
     if (clusters.length === 0) {
       clusters.push(createCluster(earthquake));
       return;
     }
-
     // Iterate over existing clusters to assign the earthquake to a cluster
     for (const cluster of clusters) {
       const distance = geolib.getDistance(
         { latitude: earthquake.latitude, longitude: earthquake.longitude },
         cluster.centroid
       );
-
       // If the earthquake is within the threshold distance, assign it to the cluster
-      if (distance <= defaultRadius) {
+      if (distance <= radius) {
         updateCluster(cluster, earthquake);
         assigned = true;
         break;
