@@ -10,7 +10,9 @@ const calculateRiskLevel = (riskCounts) => {
 
 const getEarthquakeRiskByLatLng = async (req, res, next) => {
   try {
-    const { latitude, longitude, includeEarthquakes, radius = 100 } = req.query;
+    const { latitude, longitude, includeEarthquakes } = req.query;
+    // Define the radius
+    let radius = 300;
     // Convert latitude and longitude to radians
     const userLatRad = parseFloat(latitude) * (Math.PI / 180);
     const userLngRad = parseFloat(longitude) * (Math.PI / 180);
@@ -43,6 +45,27 @@ const getEarthquakeRiskByLatLng = async (req, res, next) => {
         Math.cos(userLatRad) * Math.cos(eqLatRad) * Math.sin(dLng / 2) ** 2;
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       const distance = earthRadius * c;
+
+      // Change radius based on label
+      switch (earthquake.cluster_label) {
+        case 15:
+          radius = 200;
+          break;
+        case 14:
+        case 13:
+          radius = 100;
+          break;
+        case 12:
+        case 11:
+        case 10:
+        case 9:
+          radius = 50;
+          break;
+        default:
+          radius = 20;
+          break;
+      }
+
       return distance <= radius;
     });
 

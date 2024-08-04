@@ -29,11 +29,11 @@ const filterEarthquake = async (req, res, next) => {
       const maxStartTimestamp = endTimestamp - 31 * 24 * 60 * 60 * 1000; // 31 days in miliseconds
 
       // Adjust startDate if it's more than 31 days behind endDate
-      const adjustedStartDate =
-        startTimestamp < maxStartTimestamp ? maxStartTimestamp : startTimestamp;
+      // const adjustedStartDate =
+      //   startTimestamp < maxStartTimestamp ? maxStartTimestamp : startTimestamp;
 
       filter.datetime = {
-        $gte: adjustedStartDate,
+        $gte: startTimestamp,
         $lte: endTimestamp,
       };
     }
@@ -50,8 +50,6 @@ const filterEarthquake = async (req, res, next) => {
         message: "Missing query parameter",
       });
     }
-
-    console.log(filter);
 
     const earthquakes = await Earthquake.find(filter);
 
